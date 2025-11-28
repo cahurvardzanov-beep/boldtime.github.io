@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Battle Arena</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { margin:0; padding:0; background: #0f0f23; color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; overflow: hidden; }
+    .container { padding: 20px; max-width: 400px; margin: 0 auto; }
+    h1 { font-size: 32px; margin: 10px 0; color: #ff4757; text-shadow: 0 0 10px #ff4757; }
+    .unit { background: #1e1e3f; border: 2px solid #ff4757; border-radius: 16px; padding: 18px; margin: 12px; cursor: pointer; transition: all 0.3s; }
+    .unit:hover { transform: scale(1.05); background: #2f2f5f; }
+    .unit:active { transform: scale(0.95); }
+    button { background: #ff4757; border: none; color: white; padding: 18px 40px; font-size: 20px; border-radius: 50px; margin: 15px; cursor: pointer; box-shadow: 0 5px 15px rgba(255,71,87,0.4); }
+    button:active { transform: translateY(4px); }
+    #army-display { background: #1a1a2e; padding: 20px; border-radius: 16px; margin: 20px 0; min-height: 120px; }
+    .log { background: #000; color: #0f0; padding: 10px; border-radius: 10px; text-align: left; font-family: monospace; max-height: 200px; overflow-y: auto; margin: 15px 0; }
+    .win { color: #00ff00; font-weight: bold; }
+    .lose { color: #ff0000; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Battle Arena</h1>
+    <p>Собери армию и уничтожь врагов!</p>
+
+    <div onclick="addUnit('infantry')" class="unit">Пехота (+20)</div>
+    <div onclick="addUnit('archer')" class="unit">Лучники (+10)</div>
+    <div onclick="addUnit('cavalry')" class="unit">Кавалерия (+5)</div>
+    <div onclick="addUnit('siege')" class="unit">Осада (+2)</div>
+
+    <div id="army-display">
+      <h3>Твоя армия:</h3>
+      <pre id="army-text">Готова к бою!</pre>
+    </div>
+
+    <button onclick="saveArmy()">Сохранить армию</button>
+    <button onclick="startBattle()">СРАЖАТЬСЯ!</button>
+
+    <div id="battle-log" class="log" style="display:none;"></div>
+  </div>
+
+  <script>
+    const tg = window.Telegram.WebApp;
+    tg.ready(); tg.expand();
+
+    let army = { infantry: 0, archer: 0, cavalry: 0, siege: 0 };
+
+    function addUnit(type) {
+      army[type] += type === 'infantry' ? 20 : type === 'archer' ? 10 : type === 'cavalry' ? 5 : 2;
+      updateDisplay();
+    }
+
+    function updateDisplay() {
+      const total = Object.values(army).reduce((a,b) => a+b, 0);
+      const list = Object.entries(army).filter(([_,c])=>c>0).map(([t,c])=>`${t}: ${c}`).join('\n') || 'Пусто';
+      document.getElementById('army-text').textContent = list + `\n\nСила: ${total}`;
+    }
+
+    function saveArmy() {
+      tg.sendData(JSON.stringify({ action: "save_army", army }));
+    }
+
+    function startBattle() {
+      if (Object.values(army).reduce((a,b)=>a+b,0) < 10) {
+        alert("Собери хотя бы 10 юнитов!");
+        return;
+      }
+      document.getElementById('battle-log').style.display = 'block';
+      document.getElementById('battle-log').innerHTML = "<br>Поиск противника...";
+      
+      tg.sendData(JSON.stringify({ action: "start_battle", army }));
+    }
+
+    // Приветствие
+    document.body.innerHTML += `<p style="margin-top:20px">Готов к войне, ${tg.initDataUnsafe.user?.first_name || 'Легенда'}!</p>`;
+  </script>
+</body>
+</html>
